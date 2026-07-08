@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClipViral</string>
+    <string name="splash_subtitle">AI Video to Shorts</string>
+    <string name="onboarding_title">Turn long videos into viral clips.</string>
+    <string name="onboarding_button">Get Started</string>
+    <string name="home_new_video">New Video</string>
+    <string name="home_recent_projects">Recent Projects</string>
+    <string name="home_no_projects">No projects yet</string>
+    <string name="models_manager_title">AI Models Manager</string>
+    <string name="models_manager_api_keys">API Keys</string>
+    <string name="models_manager_gemini_label">Gemini API Key</string>
+    <string name="models_manager_hf_label">Hugging Face Token</string>
+    <string name="models_manager_save">Save Keys</string>
+</resources>

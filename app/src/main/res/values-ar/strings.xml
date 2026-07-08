@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClipViral</string>
+    <string name="splash_subtitle">من فيديو طويل إلى مقاطع قصيرة بالذكاء الاصطناعي</string>
+    <string name="onboarding_title">حوّل فيديوهاتك الطويلة إلى مقاطع فيرال جاهزة.</string>
+    <string name="onboarding_button">ابدأ الآن</string>
+    <string name="home_new_video">فيديو جديد</string>
+    <string name="home_recent_projects">مشاريعي الأخيرة</string>
+    <string name="home_no_projects">لا توجد مشاريع بعد</string>
+    <string name="models_manager_title">إدارة نماذج الذكاء الاصطناعي</string>
+    <string name="models_manager_api_keys">مفاتيح API</string>
+    <string name="models_manager_gemini_label">مفتاح Gemini API</string>
+    <string name="models_manager_hf_label">توكن Hugging Face</string>
+    <string name="models_manager_save">حفظ المفاتيح</string>
+</resources>

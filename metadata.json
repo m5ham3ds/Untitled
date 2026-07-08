@@ -1,0 +1,6 @@
+{
+  "name": "ClipViral",
+  "description": "Convert long videos into short viral clips using AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
