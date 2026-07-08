@@ -104,7 +104,7 @@ class ProcessingViewModel(application: Application) : AndroidViewModel(applicati
             val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$geminiKey"
             
             val prompt = """
-                Analyze the following transcription of a video and find the $count most interesting, viral, or engaging parts.
+                Analyze the following transcription of a video and find the $count most interesting, viral, or engaging parts based on engagement markers (e.g., strong emotions, controversial statements, high energy).
                 Each part should be roughly $duration seconds long (based on context).
                 Return ONLY a JSON array of objects with 'start_time' and 'end_time' in seconds (integers).
                 Example: [{"start_time": 10, "end_time": 40}, {"start_time": 120, "end_time": 150}]

@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +28,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +38,8 @@ fun EditorScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(Uri.parse(videoUri))
@@ -53,6 +58,51 @@ fun EditorScreen(
 
     var isEditing by remember { mutableStateOf(false) }
     var captionText by remember { mutableStateOf("WELCOME TO THE PODCAST. TODAY WE ARE TALKING ABOUT AI.") }
+    
+    var showExportDialog by remember { mutableStateOf(false) }
+    var exportProgress by remember { mutableStateOf(0f) }
+    var exportComplete by remember { mutableStateOf(false) }
+
+    if (showExportDialog) {
+        AlertDialog(
+            onDismissRequest = { if (exportComplete) showExportDialog = false },
+            confirmButton = {
+                if (exportComplete) {
+                    TextButton(onClick = { showExportDialog = false; onBack() }) {
+                        Text("Done")
+                    }
+                }
+            },
+            title = { Text(if (exportComplete) "Export Complete" else "Exporting Video...") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (!exportComplete) {
+                        LinearProgressIndicator(
+                            progress = { exportProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("${(exportProgress * 100).toInt()}%")
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Success",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Video saved to gallery successfully!")
+                    }
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -64,8 +114,28 @@ fun EditorScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = onBack) {
-                        Text("Save & Export", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    FilledTonalButton(
+                        onClick = { 
+                            showExportDialog = true
+                            exportProgress = 0f
+                            exportComplete = false
+                            coroutineScope.launch {
+                                while (exportProgress < 1f) {
+                                    delay(100)
+                                    exportProgress += 0.05f
+                                }
+                                exportComplete = true
+                            }
+                        },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Download, contentDescription = "Export")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Export", fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
