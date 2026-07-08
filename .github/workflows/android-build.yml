@@ -1,46 +1,51 @@
-name: Android CI
+name: Android CI/CD
 
 on:
   push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Create fallback .env file
+        run: cp .env.example .env
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      - name: Decode Debug Keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          else
+            echo "debug.keystore.base64 is missing, skipping."
+          fi
 
-    - name: Upload Debug APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          validate-wrappers: false
 
-    - name: Build Release APK
-      if: startsWith(github.ref, 'refs/tags/v')
-      run: ./gradlew assembleRelease
-      env:
-        KEYSTORE_PATH: ${{ runner.temp }}/keystore.jks
-        STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      
-    # Note: For release builds, you would decode KEYSTORE_BASE64 to KEYSTORE_PATH here.
+      - name: Build Debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Clip-Viral-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
