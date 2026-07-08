@@ -12,4 +12,20 @@
     <string name="models_manager_gemini_label">Gemini API Key</string>
     <string name="models_manager_hf_label">Hugging Face Token</string>
     <string name="models_manager_save">Save Keys</string>
+    <string name="import_title">Import Video</string>
+    <string name="import_from_device">From Device</string>
+    <string name="import_from_url">From URL</string>
+    <string name="import_continue">Continue</string>
+    <string name="import_error_size">Video size exceeds limit.</string>
+    <string name="import_error_format">Unsupported video format.</string>
+    <string name="settings_aspect_ratio_title">Preferred Aspect Ratio</string>
+    <string name="settings_aspect_tiktok">TikTok (9:16)</string>
+    <string name="settings_aspect_reels">IG Reels (9:16)</string>
+    <string name="settings_aspect_shorts">YT Shorts (9:16)</string>
+    <string name="settings_aspect_square">Square (1:1)</string>
+    <string name="settings_aspect_landscape">Landscape (16:9)</string>
+    <string name="processing_settings_title">Processing Settings</string>
+    <string name="processing_start">Start Processing</string>
+    <string name="processing_title">Processing Video...</string>
+    <string name="processing_cancel">Cancel</string>
 </resources>

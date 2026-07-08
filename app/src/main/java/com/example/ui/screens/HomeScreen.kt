@@ -21,7 +21,7 @@ import com.example.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onNavigateToImport: () -> Unit, onNavigateToModels: () -> Unit) {
+fun HomeScreen(onNavigateToImport: () -> Unit, onNavigateToModels: () -> Unit, onNavigateToSettings: () -> Unit) {
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -56,7 +56,7 @@ fun HomeScreen(onNavigateToImport: () -> Unit, onNavigateToModels: () -> Unit) {
                 )
                 NavigationBarItem(
                     selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
+                    onClick = { onNavigateToSettings() },
                     icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
                     label = { Text("Settings") }
                 )

@@ -12,4 +12,20 @@
     <string name="models_manager_gemini_label">مفتاح Gemini API</string>
     <string name="models_manager_hf_label">توكن Hugging Face</string>
     <string name="models_manager_save">حفظ المفاتيح</string>
+    <string name="import_title">استيراد فيديو</string>
+    <string name="import_from_device">من الجهاز</string>
+    <string name="import_from_url">من رابط</string>
+    <string name="import_continue">متابعة</string>
+    <string name="import_error_size">حجم الفيديو يتجاوز الحد المسموح.</string>
+    <string name="import_error_format">صيغة الفيديو غير مدعومة.</string>
+    <string name="settings_aspect_ratio_title">نسبة العرض المفضلة</string>
+    <string name="settings_aspect_tiktok">تيك توك (9:16)</string>
+    <string name="settings_aspect_reels">ريلز إنستغرام (9:16)</string>
+    <string name="settings_aspect_shorts">يوتيوب شورتس (9:16)</string>
+    <string name="settings_aspect_square">مربع (1:1)</string>
+    <string name="settings_aspect_landscape">أفقي (16:9)</string>
+    <string name="processing_settings_title">إعدادات المعالجة</string>
+    <string name="processing_start">بدء المعالجة</string>
+    <string name="processing_title">جاري معالجة الفيديو...</string>
+    <string name="processing_cancel">إلغاء</string>
 </resources>
