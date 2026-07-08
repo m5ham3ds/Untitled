@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.app.Application
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -11,45 +12,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.R
 import com.example.ui.theme.Primary
 import com.example.ui.theme.PrimaryVariant
-import kotlinx.coroutines.delay
+import com.example.viewmodel.ProcessingViewModel
 
 @Composable
 fun ProcessingScreen(
+    videoUri: String,
+    aspectRatio: String,
+    clipCount: Int,
+    clipDuration: Int,
     onCancel: () -> Unit,
     onProcessingComplete: () -> Unit
 ) {
-    // Simulate processing
-    var progress by remember { mutableStateOf(0f) }
-    var currentStep by remember { mutableStateOf("Initializing AI Models...") }
-
-    LaunchedEffect(Unit) {
-        val steps = listOf(
-            "Analyzing Audio...",
-            "Transcribing Text...",
-            "Extracting Highlights...",
-            "Auto-Reframing to 9:16...",
-            "Generating Captions...",
-            "Exporting Clips..."
-        )
-        
-        for (i in steps.indices) {
-            currentStep = steps[i]
-            val stepProgress = 1f / steps.size
-            for (j in 1..10) {
-                delay(150)
-                progress += stepProgress / 10f
+    val context = LocalContext.current.applicationContext as Application
+    val viewModel: ProcessingViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ProcessingViewModel(context) as T
             }
         }
-        delay(500)
-        onProcessingComplete()
+    )
+
+    val progress by viewModel.progress.collectAsState()
+    val currentStep by viewModel.currentStep.collectAsState()
+    val isComplete by viewModel.isComplete.collectAsState()
+    val error by viewModel.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.startProcessing(videoUri, aspectRatio, clipCount, clipDuration)
+    }
+
+    LaunchedEffect(isComplete) {
+        if (isComplete) {
+            onProcessingComplete()
+        }
     }
 
     Box(
@@ -71,40 +77,46 @@ fun ProcessingScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             
-            // Custom AI Loading Spinner
-            AiLoadingSpinner()
+            if (error == null) {
+                AiLoadingSpinner()
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
-                text = currentStep,
-                color = MaterialTheme.colorScheme.onBackground,
+                text = error ?: currentStep,
+                color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.surface
-            )
+            if (error == null) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.surface
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
+            }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-
             Spacer(modifier = Modifier.height(48.dp))
             
             OutlinedButton(onClick = onCancel) {
-                Text(stringResource(R.string.processing_cancel), color = MaterialTheme.colorScheme.error)
+                Text(
+                    if (error != null) "Back" else stringResource(R.string.processing_cancel), 
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }

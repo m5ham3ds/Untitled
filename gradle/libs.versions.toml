@@ -1,4 +1,5 @@
 [versions]
+ffmpegKit = "4.4.LTS"
 kotlinxSerializationJson = "1.7.3"
 retrofitConverterSerialization = "2.11.0"
 agp = "9.1.1"
@@ -43,6 +44,7 @@ secretsGradlePlugin = "2.0.1"
 googleServices = "4.5.0"
 
 [libraries]
+ffmpeg-kit = { module = "com.arthenica:mobile-ffmpeg-full", version.ref = "ffmpegKit" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 retrofit-converter-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofitConverterSerialization" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

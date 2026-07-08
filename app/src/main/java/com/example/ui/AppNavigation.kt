@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.ui.screens.*
 
 @Composable
@@ -41,21 +43,45 @@ fun AppNavigation() {
             ImportScreen(
                 onBack = { navController.popBackStack() },
                 onContinue = { videoUri -> 
-                    navController.navigate("processing_settings")
+                    // Safe url encoding for navigation
+                    val encodedUri = java.net.URLEncoder.encode(videoUri, "UTF-8")
+                    navController.navigate("processing_settings/$encodedUri")
                 }
             )
         }
-        composable("processing_settings") {
+        composable(
+            route = "processing_settings/{videoUri}",
+            arguments = listOf(navArgument("videoUri") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
             ProcessingSettingsScreen(
-                videoUri = "",
+                videoUri = videoUri,
                 onBack = { navController.popBackStack() },
                 onStartProcessing = { aspectRatio, autoCaptions, clipCount, clipDuration ->
-                    navController.navigate("processing")
+                    val encodedUri = java.net.URLEncoder.encode(videoUri, "UTF-8")
+                    navController.navigate("processing/$encodedUri/$aspectRatio/$clipCount/$clipDuration")
                 }
             )
         }
-        composable("processing") {
+        composable(
+            route = "processing/{videoUri}/{aspectRatio}/{clipCount}/{clipDuration}",
+            arguments = listOf(
+                navArgument("videoUri") { type = NavType.StringType },
+                navArgument("aspectRatio") { type = NavType.StringType },
+                navArgument("clipCount") { type = NavType.IntType },
+                navArgument("clipDuration") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+            val aspectRatio = backStackEntry.arguments?.getString("aspectRatio") ?: "9:16"
+            val clipCount = backStackEntry.arguments?.getInt("clipCount") ?: 3
+            val clipDuration = backStackEntry.arguments?.getInt("clipDuration") ?: 30
+            
             ProcessingScreen(
+                videoUri = videoUri,
+                aspectRatio = aspectRatio,
+                clipCount = clipCount,
+                clipDuration = clipDuration,
                 onCancel = { navController.popBackStack("home", inclusive = false) },
                 onProcessingComplete = { 
                     navController.navigate("home") {
