@@ -84,10 +84,21 @@ fun AppNavigation() {
                 clipDuration = clipDuration,
                 onCancel = { navController.popBackStack("home", inclusive = false) },
                 onProcessingComplete = { 
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
+                    val encodedUri = java.net.URLEncoder.encode(videoUri, "UTF-8")
+                    navController.navigate("editor/$encodedUri") {
+                        popUpTo("home") { inclusive = false }
                     }
                 }
+            )
+        }
+        composable(
+            route = "editor/{videoUri}",
+            arguments = listOf(navArgument("videoUri") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+            EditorScreen(
+                videoUri = videoUri,
+                onBack = { navController.popBackStack("home", inclusive = false) }
             )
         }
     }
