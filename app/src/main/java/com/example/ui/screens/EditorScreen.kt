@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,9 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,6 +31,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,12 +58,54 @@ fun EditorScreen(
         }
     }
 
-    var isEditing by remember { mutableStateOf(false) }
+    var isEditingText by remember { mutableStateOf(false) }
+    var showStylePanel by remember { mutableStateOf(false) }
     var captionText by remember { mutableStateOf("WELCOME TO THE PODCAST. TODAY WE ARE TALKING ABOUT AI.") }
+    var captionColor by remember { mutableStateOf(Color.White) }
+    var captionPosition by remember { mutableStateOf("Center") }
+    var aspectRatio by remember { mutableStateOf("9:16") }
+    var captionFont by remember { mutableStateOf("Default") }
     
     var showExportDialog by remember { mutableStateOf(false) }
     var exportProgress by remember { mutableStateOf(0f) }
     var exportComplete by remember { mutableStateOf(false) }
+
+    // Load state from SharedPreferences
+    LaunchedEffect(videoUri) {
+        val prefs = context.getSharedPreferences("editor_prefs", Context.MODE_PRIVATE)
+        val stateJson = prefs.getString(videoUri, null)
+        if (stateJson != null) {
+            try {
+                val json = JSONObject(stateJson)
+                captionText = json.optString("text", captionText)
+                val colorInt = json.optInt("color", android.graphics.Color.WHITE)
+                captionColor = Color(colorInt)
+                captionPosition = json.optString("position", captionPosition)
+                aspectRatio = json.optString("aspectRatio", aspectRatio)
+                captionFont = json.optString("font", captionFont)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    val saveState = {
+        val prefs = context.getSharedPreferences("editor_prefs", Context.MODE_PRIVATE)
+        val json = JSONObject()
+        json.put("text", captionText)
+        json.put("color", android.graphics.Color.argb(
+            (captionColor.alpha * 255).toInt(),
+            (captionColor.red * 255).toInt(),
+            (captionColor.green * 255).toInt(),
+            (captionColor.blue * 255).toInt()
+        ))
+        json.put("position", captionPosition)
+        json.put("aspectRatio", aspectRatio)
+        json.put("font", captionFont)
+        
+        prefs.edit().putString(videoUri, json.toString()).apply()
+        Toast.makeText(context, "Project Saved", Toast.LENGTH_SHORT).show()
+    }
 
     if (showExportDialog) {
         AlertDialog(
@@ -107,13 +151,16 @@ fun EditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Edit Captions") },
+                title = { Text("Edit Video") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    IconButton(onClick = saveState) {
+                        Icon(Icons.Default.Save, contentDescription = "Save Project")
+                    }
                     FilledTonalButton(
                         onClick = { 
                             showExportDialog = true
@@ -134,14 +181,15 @@ fun EditorScreen(
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Icon(Icons.Default.Download, contentDescription = "Export")
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text("Export", fontWeight = FontWeight.Bold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Black.copy(alpha = 0.5f),
                     titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         },
@@ -152,77 +200,117 @@ fun EditorScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Video Player
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        useController = false
-                        layoutParams = android.view.ViewGroup.LayoutParams(
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // Caption Overlay
+            // Simulated Aspect Ratio Container
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.Center)
-                    .padding(horizontal = 32.dp)
-                    .clickable { isEditing = true },
+                    .fillMaxSize()
+                    .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (isEditing) {
-                    BasicTextField(
-                        value = captionText,
-                        onValueChange = { captionText = it.uppercase() },
-                        textStyle = TextStyle(
-                            color = Color.White,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black,
-                                offset = androidx.compose.ui.geometry.Offset(4f, 4f),
-                                blurRadius = 8f
-                            )
-                        ),
-                        cursorBrush = SolidColor(Color.White),
-                        modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                            .padding(16.dp)
-                            .fillMaxWidth()
+                // Video Player Container with specific aspect ratio
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(
+                            when (aspectRatio) {
+                                "9:16" -> 9f / 16f
+                                "1:1" -> 1f
+                                "16:9" -> 16f / 9f
+                                else -> 9f / 16f
+                            }
+                        )
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.DarkGray)
+                ) {
+                    AndroidView(
+                        factory = { ctx ->
+                            PlayerView(ctx).apply {
+                                player = exoPlayer
+                                useController = false
+                                layoutParams = android.view.ViewGroup.LayoutParams(
+                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                    android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
-                } else {
-                    Text(
-                        text = captionText,
-                        color = Color.White,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center,
-                        style = TextStyle(
-                            shadow = androidx.compose.ui.graphics.Shadow(
-                                color = Color.Black,
-                                offset = androidx.compose.ui.geometry.Offset(4f, 4f),
-                                blurRadius = 8f
-                            )
-                        ),
+
+                    // Caption Overlay
+                    val align = when (captionPosition) {
+                        "Top" -> Alignment.TopCenter
+                        "Center" -> Alignment.Center
+                        "Bottom" -> Alignment.BottomCenter
+                        else -> Alignment.Center
+                    }
+
+                    val font = when (captionFont) {
+                        "Monospace" -> FontFamily.Monospace
+                        "Serif" -> FontFamily.Serif
+                        "SansSerif" -> FontFamily.SansSerif
+                        else -> FontFamily.Default
+                    }
+
+                    Box(
                         modifier = Modifier
-                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                            .padding(16.dp)
                             .fillMaxWidth()
-                    )
+                            .align(align)
+                            .padding(horizontal = 24.dp, vertical = 32.dp)
+                            .clickable { isEditingText = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isEditingText) {
+                            BasicTextField(
+                                value = captionText,
+                                onValueChange = { captionText = it.uppercase() },
+                                textStyle = TextStyle(
+                                    color = captionColor,
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontFamily = font,
+                                    textAlign = TextAlign.Center,
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black,
+                                        offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+                                        blurRadius = 8f
+                                    )
+                                ),
+                                cursorBrush = SolidColor(captionColor),
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                            )
+                        } else {
+                            Text(
+                                text = captionText,
+                                color = captionColor,
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontFamily = font,
+                                textAlign = TextAlign.Center,
+                                style = TextStyle(
+                                    shadow = androidx.compose.ui.graphics.Shadow(
+                                        color = Color.Black,
+                                        offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+                                        blurRadius = 8f
+                                    )
+                                ),
+                                modifier = Modifier
+                                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
+                    }
                 }
             }
 
             // Edit Controls
-            if (isEditing) {
+            if (isEditingText) {
                 FloatingActionButton(
-                    onClick = { isEditing = false },
+                    onClick = { isEditingText = false },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(32.dp),
@@ -231,27 +319,139 @@ fun EditorScreen(
                     Icon(Icons.Default.Check, contentDescription = "Done Editing")
                 }
             } else {
-                FloatingActionButton(
-                    onClick = { isEditing = true },
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(32.dp),
-                    containerColor = MaterialTheme.colorScheme.secondary
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Caption")
+                    FloatingActionButton(
+                        onClick = { showStylePanel = true },
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    ) {
+                        Icon(Icons.Default.Palette, contentDescription = "Style Options")
+                    }
+                    FloatingActionButton(
+                        onClick = { isEditingText = true },
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Text")
+                    }
                 }
             }
             
             // Instruction
-            if (!isEditing) {
+            if (!isEditingText && !showStylePanel) {
                 Text(
-                    text = "Tap the caption to edit",
+                    text = "Tap the caption to edit text",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 14.sp,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 48.dp)
                 )
+            }
+        }
+    }
+
+    if (showStylePanel) {
+        ModalBottomSheet(
+            onDismissRequest = { showStylePanel = false },
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                Text("Customize Style", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                
+                // Aspect Ratio Selection
+                Column {
+                    Text("Aspect Ratio (Output)", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("9:16" to "Portrait", "1:1" to "Square", "16:9" to "Landscape").forEach { (ratio, name) ->
+                            FilterChip(
+                                selected = aspectRatio == ratio,
+                                onClick = { aspectRatio = ratio },
+                                label = { Text(name) }
+                            )
+                        }
+                    }
+                }
+
+                // Position Selection
+                Column {
+                    Text("Caption Position", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("Top", "Center", "Bottom").forEach { pos ->
+                            FilterChip(
+                                selected = captionPosition == pos,
+                                onClick = { captionPosition = pos },
+                                label = { Text(pos) }
+                            )
+                        }
+                    }
+                }
+
+                // Color Selection
+                Column {
+                    Text("Caption Color", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        val colors = listOf(Color.White, Color.Yellow, Color.Green, Color.Cyan, Color.Red)
+                        colors.forEach { col ->
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(col)
+                                    .clickable { captionColor = col }
+                                    .padding(4.dp)
+                            ) {
+                                if (captionColor == col) {
+                                    Icon(
+                                        Icons.Default.Check, 
+                                        contentDescription = null, 
+                                        tint = if (col == Color.White || col == Color.Yellow) Color.Black else Color.White,
+                                        modifier = Modifier.align(Alignment.Center)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Font Selection
+                Column {
+                    Text("Caption Font", style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("Default", "Monospace", "Serif", "SansSerif").forEach { font ->
+                            FilterChip(
+                                selected = captionFont == font,
+                                onClick = { captionFont = font },
+                                label = { Text(font) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
