@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -19,10 +20,13 @@ import com.example.R
 fun ProcessingSettingsScreen(
     videoUri: String,
     onBack: () -> Unit,
-    onStartProcessing: (aspectRatio: String, autoCaptions: Boolean) -> Unit
+    onStartProcessing: (aspectRatio: String, autoCaptions: Boolean, clipCount: Int, clipDuration: Int) -> Unit
 ) {
     var selectedAspectRatio by remember { mutableStateOf("9:16") }
     var autoCaptions by remember { mutableStateOf(true) }
+    
+    var clipCount by remember { mutableFloatStateOf(3f) }
+    var clipDuration by remember { mutableFloatStateOf(30f) }
 
     Scaffold(
         topBar = {
@@ -60,24 +64,54 @@ fun ProcessingSettingsScreen(
                         "16:9" to stringResource(R.string.settings_aspect_landscape)
                     )
 
-                    aspectRatios.forEach { (value, label) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedAspectRatio == value,
-                                onClick = { selectedAspectRatio = value }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label)
+                    Column(Modifier.selectableGroup()) {
+                        aspectRatios.forEach { (value, label) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedAspectRatio == value,
+                                    onClick = { selectedAspectRatio = value }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(label)
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
                     
+                    Text(
+                        stringResource(R.string.processing_clip_settings),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(stringResource(R.string.processing_clip_count, clipCount.toInt()))
+                    Slider(
+                        value = clipCount,
+                        onValueChange = { clipCount = it },
+                        valueRange = 1f..10f,
+                        steps = 8
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(stringResource(R.string.processing_clip_duration, clipDuration.toInt()))
+                    Slider(
+                        value = clipDuration,
+                        onValueChange = { clipDuration = it },
+                        valueRange = 15f..90f,
+                        steps = 4 
+                    )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Text(
                         "Processing Features",
                         fontSize = 18.sp,
@@ -103,7 +137,7 @@ fun ProcessingSettingsScreen(
             }
 
             Button(
-                onClick = { onStartProcessing(selectedAspectRatio, autoCaptions) },
+                onClick = { onStartProcessing(selectedAspectRatio, autoCaptions, clipCount.toInt(), clipDuration.toInt()) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)

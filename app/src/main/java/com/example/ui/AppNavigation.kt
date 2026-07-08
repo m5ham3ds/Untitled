@@ -49,7 +49,7 @@ fun AppNavigation() {
             ProcessingSettingsScreen(
                 videoUri = "",
                 onBack = { navController.popBackStack() },
-                onStartProcessing = { aspectRatio, autoCaptions ->
+                onStartProcessing = { aspectRatio, autoCaptions, clipCount, clipDuration ->
                     navController.navigate("processing")
                 }
             )

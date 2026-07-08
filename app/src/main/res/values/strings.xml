@@ -28,4 +28,7 @@
     <string name="processing_start">Start Processing</string>
     <string name="processing_title">Processing Video...</string>
     <string name="processing_cancel">Cancel</string>
+    <string name="processing_clip_settings">Clip Settings</string>
+    <string name="processing_clip_count">Number of clips to generate: %d</string>
+    <string name="processing_clip_duration">Approximate duration per clip: %ds</string>
 </resources>

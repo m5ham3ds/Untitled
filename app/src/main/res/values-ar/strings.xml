@@ -28,4 +28,7 @@
     <string name="processing_start">بدء المعالجة</string>
     <string name="processing_title">جاري معالجة الفيديو...</string>
     <string name="processing_cancel">إلغاء</string>
+    <string name="processing_clip_settings">إعدادات المقاطع</string>
+    <string name="processing_clip_count">عدد المقاطع المراد إنشاؤها: %d</string>
+    <string name="processing_clip_duration">المدة التقريبية لكل مقطع: %d ثانية</string>
 </resources>
