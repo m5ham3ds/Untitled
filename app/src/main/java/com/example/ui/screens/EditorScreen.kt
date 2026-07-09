@@ -85,20 +85,36 @@ fun EditorScreen(
     // Multi-clip state
     var currentClipIndex by remember { mutableIntStateOf(0) }
     
-    // Initialize mock clips
+    var videoDurationSeconds by remember { mutableStateOf(60f) }
+    LaunchedEffect(videoUri) {
+        try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(context, Uri.parse(videoUri))
+            val time = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+            videoDurationSeconds = (time?.toLong() ?: 60000L) / 1000f
+            retriever.release()
+            
+            // Clamp clips if needed
+            ClipManager.clips.forEach { clip ->
+                if (clip.trimEnd > videoDurationSeconds) clip.trimEnd = videoDurationSeconds
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // Initialize clips
     val clips = remember {
-        mutableStateListOf(
-            VideoClip(0, "Highlight 1", segments = mutableStateListOf(
+        val list = mutableStateListOf<VideoClip>()
+        if (ClipManager.clips.isNotEmpty()) {
+            list.addAll(ClipManager.clips)
+        } else {
+            list.add(VideoClip(0, "Highlight 1", segments = mutableStateListOf(
                 CaptionSegment(0, "WELCOME TO THE PODCAST.", 0.1f, 0.4f),
                 CaptionSegment(1, "TODAY WE ARE TALKING ABOUT AI.", 0.5f, 0.9f)
-            )),
-            VideoClip(1, "Highlight 2", segments = mutableStateListOf(
-                CaptionSegment(0, "IT'S MIND BLOWING.", 0.2f, 0.8f)
-            )),
-            VideoClip(2, "Highlight 3", segments = mutableStateListOf(
-                CaptionSegment(0, "WHAT DO YOU THINK?", 0.3f, 0.7f)
-            ))
-        )
+            )))
+        }
+        list
     }
 
     var editingSegmentId by remember { mutableStateOf<Int?>(0) }
@@ -312,7 +328,21 @@ fun EditorScreen(
                             else -> FontFamily.Default
                         }
                         
-                        val activeSegment = currentClip.segments.find { it.id == editingSegmentId } ?: currentClip.segments.firstOrNull()
+                        var currentVideoPosition by remember { mutableLongStateOf(0L) }
+                        LaunchedEffect(Unit) {
+                            while (true) {
+                                delay(100)
+                                currentVideoPosition = exoPlayer.currentPosition
+                            }
+                        }
+                        
+                        val activeSegment = if (isEditingText) {
+                            currentClip.segments.find { it.id == editingSegmentId } ?: currentClip.segments.firstOrNull()
+                        } else {
+                            val relativeProgress = ((currentVideoPosition - (currentClip.trimStart * 1000L)) / ((currentClip.trimEnd - currentClip.trimStart) * 1000f)).coerceIn(0f, 1f)
+                            currentClip.segments.find { relativeProgress >= it.startProgress && relativeProgress <= it.endProgress }
+                                ?: currentClip.segments.firstOrNull()
+                        }
 
                         if (activeSegment != null) {
                             Box(
@@ -443,6 +473,16 @@ fun EditorScreen(
                 // Update local state when clip changes
                 LaunchedEffect(currentClipIndex) {
                     sliderPosition = clips[currentClipIndex].trimStart..clips[currentClipIndex].trimEnd
+                    exoPlayer.seekTo((clips[currentClipIndex].trimStart * 1000).toLong())
+                }
+                
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        delay(100)
+                        if (exoPlayer.currentPosition > (clips[currentClipIndex].trimEnd * 1000).toLong()) {
+                            exoPlayer.seekTo((clips[currentClipIndex].trimStart * 1000).toLong())
+                        }
+                    }
                 }
                 RangeSlider(
                     value = sliderPosition,
@@ -450,8 +490,9 @@ fun EditorScreen(
                         sliderPosition = it
                         clips[currentClipIndex].trimStart = it.start
                         clips[currentClipIndex].trimEnd = it.endInclusive
+                        exoPlayer.seekTo((it.start * 1000).toLong())
                     },
-                    valueRange = 0f..1f,
+                    valueRange = 0f..videoDurationSeconds,
                     modifier = Modifier.fillMaxWidth()
                 )
 
