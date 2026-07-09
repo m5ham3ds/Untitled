@@ -3,6 +3,8 @@ package com.example.ui.screens
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -73,10 +75,12 @@ fun EditorScreen(
 
     var isEditingText by remember { mutableStateOf(false) }
     var showStylePanel by remember { mutableStateOf(false) }
-    var captionColor by remember { mutableStateOf(Color.White) }
-    var captionPosition by remember { mutableStateOf("Center") }
+    var captionColor by remember { mutableStateOf(ProjectSettings.getColorFromName(ProjectSettings.captionColor)) }
+    var captionPosition by remember { mutableStateOf(ProjectSettings.captionPosition) }
     var aspectRatio by remember { mutableStateOf("9:16") }
-    var captionFont by remember { mutableStateOf("Default") }
+    var captionFont by remember { mutableStateOf(ProjectSettings.captionFont) }
+    var captionAnimation by remember { mutableStateOf(ProjectSettings.captionAnimation) }
+    var showVideoTitle by remember { mutableStateOf(ProjectSettings.showVideoTitle) }
     
     var showExportDialog by remember { mutableStateOf(false) }
     var exportProgress by remember { mutableStateOf(0f) }
@@ -344,62 +348,92 @@ fun EditorScreen(
                                 ?: currentClip.segments.firstOrNull()
                         }
 
-                        if (activeSegment != null) {
-                            Box(
+                        if (showVideoTitle) {
+                            Text(
+                                text = currentClip.name,
+                                color = Color.White,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Bold,
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(align)
-                                    .padding(horizontal = 24.dp, vertical = 32.dp)
-                                    .clickable { isEditingText = true },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isEditingText) {
-                                    BasicTextField(
-                                        value = activeSegment.text,
-                                        onValueChange = { newText ->
-                                            val index = currentClip.segments.indexOfFirst { it.id == activeSegment.id }
-                                            if (index != -1) {
-                                                currentClip.segments[index] = activeSegment.copy(text = newText.uppercase())
-                                            }
-                                        },
-                                        textStyle = TextStyle(
-                                            color = captionColor,
-                                            fontSize = 28.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontFamily = font,
-                                            textAlign = TextAlign.Center,
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black,
-                                                offset = androidx.compose.ui.geometry.Offset(4f, 4f),
-                                                blurRadius = 8f
-                                            )
-                                        ),
-                                        cursorBrush = SolidColor(captionColor),
-                                        modifier = Modifier
-                                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
-                                            .padding(16.dp)
-                                            .fillMaxWidth()
-                                    )
-                                } else {
-                                    Text(
-                                        text = activeSegment.text,
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = 40.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        val enterTransition = when (captionAnimation) {
+                            "Pop" -> scaleIn(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+                            "Slide Up" -> slideInVertically(initialOffsetY = { it }, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+                            else -> fadeIn(animationSpec = tween(300))
+                        }
+                        
+                        val exitTransition = fadeOut(animationSpec = tween(200))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(align)
+                                .padding(horizontal = 24.dp, vertical = 32.dp)
+                                .clickable { isEditingText = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isEditingText && activeSegment != null) {
+                                BasicTextField(
+                                    value = activeSegment.text,
+                                    onValueChange = { newText ->
+                                        val index = currentClip.segments.indexOfFirst { it.id == activeSegment.id }
+                                        if (index != -1) {
+                                            currentClip.segments[index] = activeSegment.copy(text = newText.uppercase())
+                                        }
+                                    },
+                                    textStyle = TextStyle(
                                         color = captionColor,
                                         fontSize = 28.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontFamily = font,
                                         textAlign = TextAlign.Center,
-                                        style = TextStyle(
-                                            shadow = androidx.compose.ui.graphics.Shadow(
-                                                color = Color.Black,
-                                                offset = androidx.compose.ui.geometry.Offset(4f, 4f),
-                                                blurRadius = 8f
-                                            )
-                                        ),
-                                        modifier = Modifier
-                                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                            .padding(16.dp)
-                                            .fillMaxWidth()
-                                    )
+                                        shadow = androidx.compose.ui.graphics.Shadow(
+                                            color = Color.Black,
+                                            offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+                                            blurRadius = 8f
+                                        )
+                                    ),
+                                    cursorBrush = SolidColor(captionColor),
+                                    modifier = Modifier
+                                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+                                        .padding(16.dp)
+                                        .fillMaxWidth()
+                                )
+                            } else {
+                                AnimatedContent(
+                                    targetState = activeSegment,
+                                    transitionSpec = {
+                                        enterTransition togetherWith exitTransition
+                                    },
+                                    label = "CaptionAnimation"
+                                ) { segment ->
+                                    if (segment != null) {
+                                        Text(
+                                            text = segment.text,
+                                            color = captionColor,
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontFamily = font,
+                                            textAlign = TextAlign.Center,
+                                            style = TextStyle(
+                                                shadow = androidx.compose.ui.graphics.Shadow(
+                                                    color = Color.Black,
+                                                    offset = androidx.compose.ui.geometry.Offset(4f, 4f),
+                                                    blurRadius = 8f
+                                                )
+                                            ),
+                                            modifier = Modifier
+                                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                                .padding(16.dp)
+                                                .fillMaxWidth()
+                                        )
+                                    }
                                 }
                             }
                         }

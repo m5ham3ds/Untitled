@@ -59,10 +59,40 @@ fun AppNavigation() {
                 onBack = { navController.popBackStack() },
                 onStartProcessing = { aspectRatio, autoCaptions, clipCount, clipDuration ->
                     val encodedUri = java.net.URLEncoder.encode(videoUri, "UTF-8")
+                    navController.navigate("style_settings/$encodedUri/$aspectRatio/$clipCount/$clipDuration")
+                }
+            )
+        }
+        
+        composable(
+            route = "style_settings/{videoUri}/{aspectRatio}/{clipCount}/{clipDuration}",
+            arguments = listOf(
+                navArgument("videoUri") { type = NavType.StringType },
+                navArgument("aspectRatio") { type = NavType.StringType },
+                navArgument("clipCount") { type = NavType.IntType },
+                navArgument("clipDuration") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val videoUri = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("videoUri") ?: "", "UTF-8")
+            val aspectRatio = backStackEntry.arguments?.getString("aspectRatio") ?: "9:16"
+            val clipCount = backStackEntry.arguments?.getInt("clipCount") ?: 3
+            val clipDuration = backStackEntry.arguments?.getInt("clipDuration") ?: 30
+            
+            StyleSettingsScreen(
+                onBack = { navController.popBackStack() },
+                onContinue = { font, color, position, animation, showTitle ->
+                    ProjectSettings.captionFont = font
+                    ProjectSettings.captionColor = color
+                    ProjectSettings.captionPosition = position
+                    ProjectSettings.captionAnimation = animation
+                    ProjectSettings.showVideoTitle = showTitle
+                    
+                    val encodedUri = java.net.URLEncoder.encode(videoUri, "UTF-8")
                     navController.navigate("processing/$encodedUri/$aspectRatio/$clipCount/$clipDuration")
                 }
             )
         }
+
         composable(
             route = "processing/{videoUri}/{aspectRatio}/{clipCount}/{clipDuration}",
             arguments = listOf(
